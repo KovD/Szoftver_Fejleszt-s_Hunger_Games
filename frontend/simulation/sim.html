@@ -7,9 +7,17 @@
     <link rel="stylesheet" href="../styles.css">
 </head>
 <body class="sim_page">
+    <button onclick="activateWinPopup()">Debug</button>
+    <div class="popup" id="popup">
+        <div class="victory">
+            Match ended
+            <div class="leaderboard" id="leader">
+            </div>
+        </div>
+    </div>
         <div class="map">
-        <div id="map-wrapper" style="position: relative; width: 100%;">
-            <img src="../../assets/map/map.png" style="width: 100%; display: block;" alt="">
+        <div id="map-wrapper">
+            <img src="../../assets/map/map.png" style="width: 100%; display: block;" alt="" id="m_image">
             </div>
     <div class="character_placer" id="sub_base"></div>
 </div>
