@@ -8,17 +8,21 @@
 </head>
 <body class="sim_page">
     <button onclick="activateWinPopup()">Debug</button>
+    <div id="event-container" class="event-container"></div>
     <div class="popup" id="popup">
         <div class="victory">
             Match ended
             <div class="leaderboard" id="leader">
             </div>
+            <div id="winamount">
+
+            </div>
         </div>
     </div>
         <div class="map">
         <div id="map-wrapper">
-            <img src="../../assets/map/map.png" style="width: 100%; display: block;" alt="" id="m_image">
-            </div>
+            <img src="../../assets/map/map.png" alt="" id="m_image">
+        </div>
     <div class="character_placer" id="sub_base"></div>
 </div>
     <script src="./scripts/sim.js"></script>
