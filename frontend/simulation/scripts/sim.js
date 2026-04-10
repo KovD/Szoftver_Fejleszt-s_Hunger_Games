@@ -1,3 +1,7 @@
+
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+
 const mapContainer = document.getElementById('map-wrapper');
 const characterBoard = document.getElementById("sub_base");
 const leaderboard = document.getElementById('leader');
@@ -8,7 +12,7 @@ let img_size = document.getElementById('m_image');
 const mapContainerElement = document.querySelector('.map');
 
 //debug list
-let characters_debug = ["ayna", "apa", "gyerekek","minőségtelen lacika","mákos tészta","MAMA"];
+//let characters_debug = ["ayna", "apa", "gyerekek","minőségtelen lacika","mákos tészta","MAMA"];
 
 
 var width
@@ -25,11 +29,49 @@ let characters = []
 // }
 
 //---------------------------------------------------Websocket_is_that_easy-------------------------
-const ws = new WebSocket('I_have_babies');
+const client = new Client({
+    webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+    onConnect: () => {
+        console.log("Sikeres csatlakozás a backendhez!");
 
-ws.onmessage = (event) => {
-    return
-};
+        client.subscribe('/topic/game.status', msg => {
+            const status = JSON.parse(msg.body);
+            if (status.status === 'FINISHED') {
+                activateWinPopup([status.winnerNpcName]);
+            } else if (status.status === 'IN_PROGRESS') {
+                events.showEvent("A játék elkezdődött!");
+            }
+        });
+
+        client.subscribe('/topic/game.state', msg => {
+            const state = JSON.parse(msg.body);
+            
+            state.npcs.forEach(npc => {
+                if (npc.alive) {
+                    const mappedX = (npc.x / 100) * width;
+                    const mappedY = (npc.y / 100) * height;
+                    
+                    updateCharacterOnMap(npc.id, '../../assets/characters/fish.png', mappedX, mappedY);
+                } else {
+                    remove_character(npc.id);
+                }
+            });
+        });
+
+        client.subscribe('/topic/game.events', msg => {
+            const eventPayload = JSON.parse(msg.body);
+            
+            eventPayload.events.forEach(e => {
+                if (e.type === 'COMBAT') {
+                    events.showEvent(`${e.attackerName} megtámadta: ${e.defenderName} (-${e.damage} HP)`);
+                } else if (e.type === 'DEATH') {
+                    events.showEvent(`💀 ${e.deadNpcName} elesett!`);
+                    remove_character(e.deadNpcId);
+                }
+            });
+        });
+    }
+});
 
 
 //---------------------------------------------------Karakter mozgási szimuláció----------------------------------------
@@ -142,37 +184,9 @@ function listWinners(character_list) {
 function activateWinPopup(character_list){
     writePrize(0);
     popup.style = "visibility: visible";
-    listWinners(characters_debug);
+    listWinners(character_list);
 }
 //------------------------------------------------------------------------------------------------------
-
-const charPositions = {};
-
-function simulateWebSocketData() {
-    const stepSize = 15;
-
-    for(let i = 1; i <= tempNum; i++) {
-        if (!charPositions[i]) {
-            charPositions[i] = { x: Math.random() * width, y: Math.random() * height };
-        }
-        
-        let moveX = (Math.random() * 2 - 1) * stepSize;
-        let moveY = (Math.random() * 2 - 1) * stepSize;
-
-        let newX = charPositions[i].x + moveX;
-        let newY = charPositions[i].y + moveY;
-
-        charPositions[i].x = Math.max(0, Math.min(width, newX));
-        charPositions[i].y = Math.max(0, Math.min(height, newY));
-
-        updateCharacterOnMap(
-            i, 
-            '../../assets/characters/fish.png', 
-            charPositions[i].x, 
-            charPositions[i].y
-        );
-    }
-}
 
 class EventManager {
     constructor(containerId) {
@@ -219,13 +233,10 @@ class EventManager {
 const events = new EventManager('event-container');
 
 
-function main(){
-
+function main() {
     width = img_size.clientWidth;
     height = img_size.clientHeight;
-    setInterval(simulateWebSocketData, 100);
-    events.showEvent("lacika buzi");
-    events.showEvent("Magyar Szeksz")
+    client.activate();
 }
 
 main();
